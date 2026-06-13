@@ -1,5 +1,41 @@
 import { getSettings, categorizeTab } from "./rules.js";
 
+// Helper to extract a friendly capitalized name from a URL hostname
+function getDomainCategoryName(url) {
+  try {
+    const urlObj = new URL(url);
+    let host = urlObj.hostname.toLowerCase();
+    
+    // Remove common prefixes
+    if (host.startsWith("www.")) {
+      host = host.slice(4);
+    }
+    
+    const parts = host.split(".");
+    if (parts.length >= 2) {
+      let mainPart = parts[parts.length - 2];
+      // If it's a domain with a 2-character TLD structure, e.g. co.uk, com.au
+      if (mainPart.length <= 3 && parts.length >= 3) {
+        mainPart = parts[parts.length - 3];
+      }
+      return mainPart.charAt(0).toUpperCase() + mainPart.slice(1);
+    }
+    return "Web";
+  } catch (e) {
+    return "Web";
+  }
+}
+
+// Select a Chrome tab color that is not currently in use, or cycle
+function getUnusedColor(usedColors) {
+  const allColors = ["blue", "cyan", "pink", "purple", "orange", "yellow", "red", "green"];
+  const unused = allColors.filter(c => !usedColors.includes(c));
+  if (unused.length > 0) {
+    return unused[0];
+  }
+  return allColors[Math.floor(Math.random() * allColors.length)];
+}
+
 let debounceTimers = {};
 
 // Debounce helper to prevent excessive grouping runs during bulk loading
@@ -52,45 +88,123 @@ async function runGroupingForWindow(windowId, manual = false) {
       }
     });
 
-    // Categorize tabs
+    // First Pass: Categorize tabs using rules.js
     const tabCategories = []; // Array of tab info with category
     const categoryCounts = {}; // categoryName -> count
+    const uncategorizedTabs = []; // List of tabs that didn't match pre-defined categories
+    const usedColors = existingGroups.map(g => g.color).filter(Boolean);
 
     for (const tab of groupableTabs) {
       const cat = categorizeTab(tab.url, tab.title, settings);
-      const catName = cat ? cat.name : null;
-      const catColor = cat ? cat.color : null;
       
-      if (catName) {
-        categoryCounts[catName] = (categoryCounts[catName] || 0) + 1;
+      if (cat) {
+        categoryCounts[cat.name] = (categoryCounts[cat.name] || 0) + 1;
+        tabCategories.push({
+          tabId: tab.id,
+          url: tab.url,
+          categoryName: cat.name,
+          color: cat.color,
+          currentGroupId: tab.groupId,
+          active: tab.active
+        });
+        if (cat.color && !usedColors.includes(cat.color)) {
+          usedColors.push(cat.color);
+        }
+      } else {
+        uncategorizedTabs.push(tab);
       }
+    }
+
+    // Second Pass: Auto-Invent Categories by Domain for Uncategorized Tabs
+    const stillUncategorized = [];
+    if (settings.autoInventDomains && uncategorizedTabs.length > 0) {
+      const domainGroups = {};
+      for (const tab of uncategorizedTabs) {
+        try {
+          const host = new URL(tab.url).hostname.toLowerCase().replace("www.", "");
+          if (!domainGroups[host]) {
+            domainGroups[host] = [];
+          }
+          domainGroups[host].push(tab);
+        } catch (e) {
+          stillUncategorized.push(tab);
+        }
+      }
+
+      for (const [host, hostTabs] of Object.entries(domainGroups)) {
+        const count = hostTabs.length;
+        const shouldGroup = settings.groupSingletons || count >= 2;
+        
+        if (shouldGroup) {
+          const catName = getDomainCategoryName(hostTabs[0].url);
+          const catColor = getUnusedColor(usedColors);
+          usedColors.push(catColor);
+          
+          categoryCounts[catName] = count;
+          
+          for (const tab of hostTabs) {
+            tabCategories.push({
+              tabId: tab.id,
+              url: tab.url,
+              categoryName: catName,
+              color: catColor,
+              currentGroupId: tab.groupId,
+              active: tab.active
+            });
+          }
+        } else {
+          stillUncategorized.push(...hostTabs);
+        }
+      }
+    } else {
+      stillUncategorized.push(...uncategorizedTabs);
+    }
+
+    // Third Pass: Bundle remaining miscellaneous singletons
+    if (settings.bundleMisc && stillUncategorized.length > 0) {
+      const count = stillUncategorized.length;
+      const shouldGroup = settings.groupSingletons || count >= 2;
       
-      tabCategories.push({
-        tabId: tab.id,
-        categoryName: catName,
-        color: catColor,
-        currentGroupId: tab.groupId,
-        active: tab.active
-      });
+      if (shouldGroup) {
+        const catName = "General";
+        const catColor = "grey";
+        
+        categoryCounts[catName] = count;
+        
+        for (const tab of stillUncategorized) {
+          tabCategories.push({
+            tabId: tab.id,
+            url: tab.url,
+            categoryName: catName,
+            color: catColor,
+            currentGroupId: tab.groupId,
+            active: tab.active
+          });
+        }
+        stillUncategorized.length = 0; // Cleared
+      }
     }
 
     // Determine grouping actions
     const tabsToGroup = {}; // categoryName -> array of tabIds
     const tabsToUngroup = [];
 
+    // Map all processed assignments to tabsToGroup/tabsToUngroup
+    const processedTabIds = tabCategories.map(t => t.tabId);
+    
+    // Add whitelisted or truly ungrouped tabs to tabsToUngroup
+    groupableTabs.forEach(tab => {
+      if (!processedTabIds.includes(tab.id)) {
+        if (tab.groupId !== chrome.tabs.TAB_ID_NONE) {
+          tabsToUngroup.push(tab.id);
+        }
+      }
+    });
+
     for (const item of tabCategories) {
       const { tabId, categoryName, currentGroupId } = item;
-      
-      if (!categoryName) {
-        // No category, should ungroup if currently grouped
-        if (currentGroupId !== chrome.tabs.TAB_ID_NONE) {
-          tabsToUngroup.push(tabId);
-        }
-        continue;
-      }
-
       const count = categoryCounts[categoryName] || 0;
-      const shouldGroup = settings.groupSingletons || count >= 2;
+      const shouldGroup = settings.groupSingletons || count >= 2 || categoryName === "General";
 
       if (shouldGroup) {
         if (!tabsToGroup[categoryName]) {
@@ -98,7 +212,6 @@ async function runGroupingForWindow(windowId, manual = false) {
         }
         tabsToGroup[categoryName].push(tabId);
       } else {
-        // If it shouldn't be grouped but is currently in a group, ungroup it
         if (currentGroupId !== chrome.tabs.TAB_ID_NONE) {
           tabsToUngroup.push(tabId);
         }

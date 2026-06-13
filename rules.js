@@ -35,7 +35,9 @@ export async function getSettings() {
       groupSingletons: false, // If false, only groups when there are >= 2 tabs in a category
       customCategories: {}, // User defined overrides/new categories
       whitelistedDomains: [], // Domains that should never be grouped
-      collapseInactive: true // Collapse groups when not focused
+      collapseInactive: true, // Collapse groups when not focused
+      autoInventDomains: true, // Auto-invent categories for domains with >= 2 tabs
+      bundleMisc: true // Consolidate remaining ungrouped tabs into a General group
     }, (settings) => {
       resolve(settings);
     });

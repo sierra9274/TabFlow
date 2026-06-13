@@ -24,6 +24,8 @@ const colorPickerGrid = document.getElementById("colorPickerGrid");
 const thresholdNumber = document.getElementById("thresholdNumber");
 const collapseToggle = document.getElementById("collapseToggle");
 const singletonsToggle = document.getElementById("singletonsToggle");
+const autoInventToggle = document.getElementById("autoInventToggle");
+const bundleMiscToggle = document.getElementById("bundleMiscToggle");
 const whitelistTextarea = document.getElementById("whitelistTextarea");
 const saveWhitelistBtn = document.getElementById("saveWhitelistBtn");
 
@@ -348,6 +350,24 @@ function initSettingsTab(settings) {
     freshSettings.groupSingletons = singletonsToggle.checked;
     await saveSettings(freshSettings);
     showToast(`Singleton grouping ${singletonsToggle.checked ? "enabled" : "disabled"}`);
+  });
+
+  // Auto-Invent Domain Categories toggle
+  autoInventToggle.checked = settings.autoInventDomains;
+  autoInventToggle.addEventListener("change", async () => {
+    const freshSettings = await getSettings();
+    freshSettings.autoInventDomains = autoInventToggle.checked;
+    await saveSettings(freshSettings);
+    showToast(`Domain auto-invention ${autoInventToggle.checked ? "enabled" : "disabled"}`);
+  });
+
+  // Bundle Misc tabs toggle
+  bundleMiscToggle.checked = settings.bundleMisc;
+  bundleMiscToggle.addEventListener("change", async () => {
+    const freshSettings = await getSettings();
+    freshSettings.bundleMisc = bundleMiscToggle.checked;
+    await saveSettings(freshSettings);
+    showToast(`Miscellaneous bundling ${bundleMiscToggle.checked ? "enabled" : "disabled"}`);
   });
 
   // Whitelist domains
