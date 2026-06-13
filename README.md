@@ -62,7 +62,7 @@ Since this is a custom extension, you can run it locally in developer mode:
 
 1. Clone or download this repository to your local machine:
    ```bash
-   git clone https://github.com/your-username/tabflow.git
+   git clone https://github.com/sierra9274/tabflow.git
    ```
 2. Open your web browser (Google Chrome, Microsoft Edge, Brave, or Arc).
 3. Navigate to the extension manager page:
@@ -96,13 +96,6 @@ tabflow/
 
 ---
 
-## 💼 Resume & Portfolio Highlights
-
-If you are using this project for your engineering portfolio or resume, here are key highlights to include:
-- **Asynchronous Lifecycles**: Designed background workers utilizing Manifest V3 service worker parameters, optimizing execution cycles to reduce memory footprint.
-- **State Serialization**: Synced configuration structures (user tables, whitelist matrices) using Chrome's asynchronous Key-Value storage API.
-- **Performance Buffering**: Implemented debouncing algorithms in event listeners to buffer simultaneous network loads, preventing tab grouping API rate limit exceptions.
-- **Vector Dial Systems**: Formulated custom mathematical arc formulas mapped to responsive SVG progress loops, dynamically updating based on storage parameters.
 
 ---
 
