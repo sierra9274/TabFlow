@@ -1,0 +1,16 @@
+# OS junk files
+.DS_Store
+Thumbs.db
+
+# Python files
+__pycache__/
+*.pyc
+
+# Local settings overrides
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

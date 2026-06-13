@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabFlow Options Panel</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="icons/icon48.png" alt="TabFlow Logo" class="brand-logo">
+        <div class="brand-text">
+          <h2>TabFlow</h2>
+          <span>Smart Auto-Grouper</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="rules-tab">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+          Grouping Rules
+        </button>
+        <button class="nav-item" data-tab="settings-tab">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+          General Settings
+        </button>
+        <button class="nav-item" data-tab="guide-tab">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm0-4h-2V7h2v7z"/>
+          </svg>
+          Documentation & Help
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <p>TabFlow v1.0.0</p>
+        <span>Intermediate Resume Project</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Workspace -->
+    <main class="workspace">
+      <!-- Alerts container for status messages -->
+      <div id="toast" class="toast hidden">Settings Saved Successfully!</div>
+
+      <!-- Tab 1: Rules Configuration -->
+      <section id="rules-tab" class="tab-content active">
+        <div class="page-header">
+          <div class="header-titles">
+            <h1>Grouping Categories & Rules</h1>
+            <p>Define keywords and domain matches that automatically classify tabs into colored folders.</p>
+          </div>
+          <button class="btn btn-primary" id="addCategoryBtn">
+            <span>Create Custom Category</span>
+          </button>
+        </div>
+
+        <!-- Create Category Form (Modal-like overlay inside content) -->
+        <div id="categoryModal" class="modal hidden">
+          <div class="modal-content glass-card">
+            <div class="modal-header">
+              <h2 id="modalTitle">Create Category</h2>
+              <button class="btn-close" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="catNameInput">Category Name</label>
+                <input type="text" id="catNameInput" placeholder="e.g., Personal Finances, Research">
+              </div>
+              <div class="form-group">
+                <label for="catColorSelect">Chrome Tab Group Color</label>
+                <div class="color-picker-grid" id="colorPickerGrid">
+                  <!-- Colors populated dynamically -->
+                </div>
+                <input type="hidden" id="catColorValue" value="grey">
+              </div>
+              <div class="form-group">
+                <label for="catKeywordsInput">Initial Keywords (comma-separated)</label>
+                <input type="text" id="catKeywordsInput" placeholder="e.g., bank.com, chase, vanguard, stock">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+              <button class="btn btn-primary" id="saveCategoryBtn">Save Category</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rules Grid -->
+        <div class="rules-grid" id="rulesGrid">
+          <!-- Populated dynamically via options.js -->
+          <div class="loading-state">Loading categorization rules...</div>
+        </div>
+      </section>
+
+      <!-- Tab 2: General Settings -->
+      <section id="settings-tab" class="tab-content">
+        <div class="page-header">
+          <div class="header-titles">
+            <h1>General Configuration</h1>
+            <p>Fine-tune the behaviors of the TabFlow trigger, automation, and whitelisting.</p>
+          </div>
+        </div>
+
+        <div class="settings-container">
+          <!-- Automation Toggles -->
+          <div class="settings-card glass-card">
+            <h2>Automation Behaviors</h2>
+            <div class="settings-grid">
+              
+              <div class="settings-row-interactive">
+                <div class="setting-desc">
+                  <h3>Tab Limit Trigger</h3>
+                  <p>Start grouping only when the total tab count in the window exceeds this number.</p>
+                </div>
+                <div class="setting-action">
+                  <input type="number" id="thresholdNumber" min="3" max="50" class="input-number">
+                  <span class="unit-text">tabs</span>
+                </div>
+              </div>
+
+              <div class="settings-row-interactive">
+                <div class="setting-desc">
+                  <h3>Auto-Collapse Inactive Groups</h3>
+                  <p>Keep your tab bar clean by automatically collapsing groups that do not contain the active tab.</p>
+                </div>
+                <div class="setting-action">
+                  <label class="switch">
+                    <input type="checkbox" id="collapseToggle">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row-interactive">
+                <div class="setting-desc">
+                  <h3>Group Singleton Tabs</h3>
+                  <p>Normally, TabFlow only creates a group if 2 or more tabs match a category. Enable this to group tabs even if there's only 1 matching tab.</p>
+                </div>
+                <div class="setting-action">
+                  <label class="switch">
+                    <input type="checkbox" id="singletonsToggle">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Whitelist Domains -->
+          <div class="settings-card glass-card">
+            <h2>Domain Whitelist</h2>
+            <p class="section-subtext">Domains listed here will never be grouped. TabFlow will leave them completely loose in your tab bar (e.g. your primary email, communication tools, etc.). Enter one domain per line.</p>
+            <div class="whitelist-area">
+              <textarea id="whitelistTextarea" placeholder="gmail.com&#10;calendar.google.com&#10;myworkdashboard.org" rows="6" class="textarea-custom"></textarea>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-primary" id="saveWhitelistBtn">Save Whitelist</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Documentation & Help -->
+      <section id="guide-tab" class="tab-content">
+        <div class="page-header">
+          <div class="header-titles">
+            <h1>Documentation & Developer Notes</h1>
+            <p>Learn how TabFlow operates and review details about the project's technical architecture.</p>
+          </div>
+        </div>
+
+        <div class="guide-container">
+          <div class="guide-card glass-card">
+            <h2>How It Works</h2>
+            <div class="guide-steps">
+              <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <h3>Triggers Monitor</h3>
+                  <p>The extension runs in a background service worker, listening to changes (creating a tab, updating an address, closing a tab). It calculates tab counts independently for each browser window.</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <h3>Classification Logic</h3>
+                  <p>When the threshold is breached, TabFlow runs every URL, host domain, and page title through the classification rules. Custom rules you create take priority over default settings.</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <h3>Chrome Tab Groups API</h3>
+                  <p>Tabs are consolidated using Chrome's native <code>chrome.tabs.group</code> engine. TabFlow names folders, assigns HSL matched colors, and collapses folders to maximize horizontal tab space.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="guide-card glass-card">
+            <h2>Technical Resume Highlights</h2>
+            <p class="highlight-intro">This project showcases the following engineering skills:</p>
+            <ul class="highlight-list">
+              <li><strong>Chrome Extensions MV3 Architecture:</strong> Background service worker lifecycles, asynchronous event listener optimizations, storage synchronization.</li>
+              <li><strong>Asynchronous Scripting & Debouncing:</strong> Implemented precise event-debouncing in the background worker to avoid overlapping API transactions and rate-limiting during high tab-creation bursts.</li>
+              <li><strong>Dynamic SVG/CSS Theming:</strong> Responsive dark mode dashboard styled with modular glassmorphic principles, standard CSS Custom Properties (Variables), and dynamic transitions.</li>
+              <li><strong>State Serialization:</strong> Syncing user categorization tables and custom settings using Chrome's asynchronous Key-Value storage (<code>chrome.storage.local</code>).</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

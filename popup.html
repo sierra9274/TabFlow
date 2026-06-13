@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabFlow Dashboard</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="glass-container">
+    <!-- Header -->
+    <header>
+      <div class="logo-area">
+        <img src="icons/icon48.png" alt="TabFlow Logo" class="logo-img">
+        <h1>TabFlow</h1>
+      </div>
+      <div class="status-indicator">
+        <span class="status-dot pulsing" id="statusDot"></span>
+        <span class="status-text" id="statusText">Active</span>
+      </div>
+    </header>
+
+    <!-- Main Content Card -->
+    <main>
+      <!-- Visual Tab Tracker -->
+      <div class="tab-gauge-card">
+        <div class="gauge-outer">
+          <svg class="progress-ring" width="120" height="120">
+            <circle class="progress-ring-bg" cx="60" cy="60" r="50" stroke-width="8"></circle>
+            <circle class="progress-ring-circle" id="progressRing" cx="60" cy="60" r="50" stroke-width="8"></circle>
+          </svg>
+          <div class="gauge-info">
+            <span class="tab-count" id="tabCount">0</span>
+            <span class="tab-total-label" id="thresholdLabel">/ 8 tabs</span>
+          </div>
+        </div>
+        <p class="gauge-status-msg" id="gaugeStatusMsg">Safe zone: Tab count is normal.</p>
+      </div>
+
+      <!-- Quick Toggles -->
+      <div class="control-group">
+        <div class="setting-row">
+          <div class="setting-label">
+            <h3>Auto-Grouping</h3>
+            <p>Automatically group tabs on overload</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="autoGroupToggle" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div class="setting-row-column">
+          <div class="slider-header">
+            <h3>Group Trigger Threshold</h3>
+            <span class="slider-val" id="thresholdVal">8 tabs</span>
+          </div>
+          <input type="range" id="thresholdSlider" min="3" max="25" value="8" class="range-slider">
+        </div>
+      </div>
+
+      <!-- Categories breakdown -->
+      <div class="categories-section">
+        <h3>Active Tab Categories</h3>
+        <div class="categories-list" id="categoriesList">
+          <!-- Populated dynamically via popup.js -->
+          <div class="loading-state">Scanning active tabs...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Actions Section -->
+    <footer>
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="groupNowBtn">
+          <span>Group Tabs Now</span>
+          <div class="btn-glow"></div>
+        </button>
+        <button class="btn btn-secondary" id="ungroupAllBtn">Ungroup All</button>
+      </div>
+      <div class="footer-links">
+        <a href="#" id="openOptionsLink">Configure Custom Rules</a>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
