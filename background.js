@@ -36,6 +36,87 @@ function getUnusedColor(usedColors) {
   return allColors[Math.floor(Math.random() * allColors.length)];
 }
 
+// Perform a batch API request to classify tabs using Gemini Flash
+async function classifyTabsWithAI(tabsToClassify, apiKey) {
+  if (!apiKey || tabsToClassify.length === 0) return [];
+
+  // Get current categories from storage to guide the prompt
+  const settings = await getSettings();
+  const predefinedCategories = Object.keys(DEFAULT_CATEGORIES);
+  const customCategories = Object.keys(settings.customCategories || {});
+  const categoriesList = [...predefinedCategories, ...customCategories].join(", ");
+
+  const prompt = `You are a tab classification assistant. Categorize these browser tabs into one of these existing categories: [${categoriesList}].
+If a tab does not fit any of the existing categories, invent a new, concise category name (1 to 2 words, e.g., "Gaming", "Recipes", "Travel", "Banking") that represents the group.
+Combine similar tabs into the same invented category where possible.
+
+Return ONLY a JSON array of objects. Do not include markdown formatting, backticks, or any conversational text.
+Response format:
+[
+  { "id": "tabId", "categoryName": "Category Name", "color": "blue/cyan/pink/red/yellow/purple/green/orange/grey" }
+]
+
+Available Chrome Group colors: ["blue", "cyan", "pink", "red", "yellow", "purple", "green", "orange", "grey"].
+Assign colors harmoniously.
+
+Tabs to classify:
+${tabsToClassify.map(t => `- ID: ${t.id}, Title: "${t.title}", URL: "${t.url}"`).join("\n")}
+`;
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Gemini API returned error status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error("No response candidates returned from Gemini");
+    }
+
+    const text = data.candidates[0].content.parts[0].text.trim();
+    
+    // Clean up potential markdown formatting if model didn't adhere strictly to JSON type
+    let cleanedText = text;
+    if (cleanedText.startsWith("```")) {
+      cleanedText = cleanedText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+    }
+
+    const classifications = JSON.parse(cleanedText);
+    
+    if (Array.isArray(classifications)) {
+      return classifications.map(c => ({
+        tabId: parseInt(c.id),
+        categoryName: c.categoryName,
+        color: c.color || "grey"
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error("Failed AI tab classification:", error);
+    return [];
+  }
+}
+
+
 let debounceTimers = {};
 
 // Debounce helper to prevent excessive grouping runs during bulk loading
@@ -115,34 +196,28 @@ async function runGroupingForWindow(windowId, manual = false) {
       }
     }
 
-    // Second Pass: Auto-Invent Categories by Domain for Uncategorized Tabs
+    // AI Pass: If enabled and key is present, try classifying unmatched tabs using Gemini
+    let aiSuccess = false;
     const stillUncategorized = [];
-    if (settings.autoInventDomains && uncategorizedTabs.length > 0) {
-      const domainGroups = {};
-      for (const tab of uncategorizedTabs) {
-        try {
-          const host = new URL(tab.url).hostname.toLowerCase().replace("www.", "");
-          if (!domainGroups[host]) {
-            domainGroups[host] = [];
-          }
-          domainGroups[host].push(tab);
-        } catch (e) {
-          stillUncategorized.push(tab);
-        }
-      }
 
-      for (const [host, hostTabs] of Object.entries(domainGroups)) {
-        const count = hostTabs.length;
-        const shouldGroup = settings.groupSingletons || count >= 2;
-        
-        if (shouldGroup) {
-          const catName = getDomainCategoryName(hostTabs[0].url);
-          const catColor = getUnusedColor(usedColors);
-          usedColors.push(catColor);
-          
-          categoryCounts[catName] = count;
-          
-          for (const tab of hostTabs) {
+    if (settings.aiEnabled && settings.geminiApiKey && uncategorizedTabs.length > 0) {
+      const tabsToClassify = uncategorizedTabs.map(t => ({
+        id: t.id,
+        title: t.title || "Untitled",
+        url: t.url || ""
+      }));
+
+      const aiClassifications = await classifyTabsWithAI(tabsToClassify, settings.geminiApiKey);
+
+      if (aiClassifications && aiClassifications.length > 0) {
+        aiSuccess = true;
+        for (const tab of uncategorizedTabs) {
+          const aiResult = aiClassifications.find(c => c.tabId === tab.id);
+          if (aiResult && aiResult.categoryName) {
+            const catName = aiResult.categoryName.trim();
+            const catColor = aiResult.color;
+            
+            categoryCounts[catName] = (categoryCounts[catName] || 0) + 1;
             tabCategories.push({
               tabId: tab.id,
               url: tab.url,
@@ -151,13 +226,62 @@ async function runGroupingForWindow(windowId, manual = false) {
               currentGroupId: tab.groupId,
               active: tab.active
             });
+            if (catColor && !usedColors.includes(catColor)) {
+              usedColors.push(catColor);
+            }
+          } else {
+            stillUncategorized.push(tab);
           }
-        } else {
-          stillUncategorized.push(...hostTabs);
         }
       }
-    } else {
-      stillUncategorized.push(...uncategorizedTabs);
+    }
+
+    // Fallback: If AI categorization was disabled, was missing an API key, or encountered an error
+    if (!aiSuccess) {
+      const localUncategorized = [];
+      if (settings.autoInventDomains && uncategorizedTabs.length > 0) {
+        const domainGroups = {};
+        for (const tab of uncategorizedTabs) {
+          try {
+            const host = new URL(tab.url).hostname.toLowerCase().replace("www.", "");
+            if (!domainGroups[host]) {
+              domainGroups[host] = [];
+            }
+            domainGroups[host].push(tab);
+          } catch (e) {
+            localUncategorized.push(tab);
+          }
+        }
+
+        for (const [host, hostTabs] of Object.entries(domainGroups)) {
+          const count = hostTabs.length;
+          const shouldGroup = settings.groupSingletons || count >= 2;
+          
+          if (shouldGroup) {
+            const catName = getDomainCategoryName(hostTabs[0].url);
+            const catColor = getUnusedColor(usedColors);
+            usedColors.push(catColor);
+            
+            categoryCounts[catName] = count;
+            
+            for (const tab of hostTabs) {
+              tabCategories.push({
+                tabId: tab.id,
+                url: tab.url,
+                categoryName: catName,
+                color: catColor,
+                currentGroupId: tab.groupId,
+                active: tab.active
+              });
+            }
+          } else {
+            localUncategorized.push(...hostTabs);
+          }
+        }
+      } else {
+        localUncategorized.push(...uncategorizedTabs);
+      }
+      stillUncategorized.push(...localUncategorized);
     }
 
     // Third Pass: Bundle remaining miscellaneous singletons

@@ -37,7 +37,9 @@ export async function getSettings() {
       whitelistedDomains: [], // Domains that should never be grouped
       collapseInactive: true, // Collapse groups when not focused
       autoInventDomains: true, // Auto-invent categories for domains with >= 2 tabs
-      bundleMisc: true // Consolidate remaining ungrouped tabs into a General group
+      bundleMisc: true, // Consolidate remaining ungrouped tabs into a General group
+      aiEnabled: false, // Enable Gemini AI Tab categorization
+      geminiApiKey: "" // User API key for Gemini models
     }, (settings) => {
       resolve(settings);
     });

@@ -179,6 +179,39 @@
             </div>
           </div>
 
+          <!-- AI Smart Categorization -->
+          <div class="settings-card glass-card">
+            <h2>AI Smart Categorization (Gemini)</h2>
+            <p class="section-subtext">Use Gemini AI models to analyze web titles and URLs, auto-generating semantic categories. This replaces simple domain-level heuristics with deep categorization.</p>
+            <div class="settings-grid">
+              
+              <div class="settings-row-interactive">
+                <div class="setting-desc">
+                  <h3>Enable Gemini AI Classification</h3>
+                  <p>When tabs trigger grouping, send uncategorized tabs in a single batch call to Gemini to dynamically class them.</p>
+                </div>
+                <div class="setting-action">
+                  <label class="switch">
+                    <input type="checkbox" id="aiToggle">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row-interactive">
+                <div class="setting-desc">
+                  <h3>Gemini API Key</h3>
+                  <p>A free API key is required. Get one for free from <a href="https://aistudio.google.com/" target="_blank" style="color: #06b6d4; text-decoration: underline; text-underline-offset: 3px;">Google AI Studio</a>.</p>
+                </div>
+                <div class="setting-action" style="flex-grow: 0.5; display: flex; gap: 8px;">
+                  <input type="password" id="apiKeyInput" placeholder="Enter Gemini API Key..." class="input-keyword" style="font-size: 0.85rem; padding: 8px 12px; width: 100%;">
+                  <button class="btn btn-primary" id="saveApiKeyBtn" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 8px;">Save Key</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           <!-- Whitelist Domains -->
           <div class="settings-card glass-card">
             <h2>Domain Whitelist</h2>

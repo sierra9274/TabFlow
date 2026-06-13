@@ -26,6 +26,9 @@ const collapseToggle = document.getElementById("collapseToggle");
 const singletonsToggle = document.getElementById("singletonsToggle");
 const autoInventToggle = document.getElementById("autoInventToggle");
 const bundleMiscToggle = document.getElementById("bundleMiscToggle");
+const aiToggle = document.getElementById("aiToggle");
+const apiKeyInput = document.getElementById("apiKeyInput");
+const saveApiKeyBtn = document.getElementById("saveApiKeyBtn");
 const whitelistTextarea = document.getElementById("whitelistTextarea");
 const saveWhitelistBtn = document.getElementById("saveWhitelistBtn");
 
@@ -368,6 +371,25 @@ function initSettingsTab(settings) {
     freshSettings.bundleMisc = bundleMiscToggle.checked;
     await saveSettings(freshSettings);
     showToast(`Miscellaneous bundling ${bundleMiscToggle.checked ? "enabled" : "disabled"}`);
+  });
+
+  // AI smart classification toggle
+  aiToggle.checked = settings.aiEnabled;
+  aiToggle.addEventListener("change", async () => {
+    const freshSettings = await getSettings();
+    freshSettings.aiEnabled = aiToggle.checked;
+    await saveSettings(freshSettings);
+    showToast(`AI classification ${aiToggle.checked ? "enabled" : "disabled"}`);
+  });
+
+  // Gemini API Key input
+  apiKeyInput.value = settings.geminiApiKey || "";
+  saveApiKeyBtn.addEventListener("click", async () => {
+    const keyVal = apiKeyInput.value.trim();
+    const freshSettings = await getSettings();
+    freshSettings.geminiApiKey = keyVal;
+    await saveSettings(freshSettings);
+    showToast("Gemini API Key saved successfully!");
   });
 
   // Whitelist domains
